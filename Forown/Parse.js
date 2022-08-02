@@ -30,7 +30,7 @@ const update_link = {"open-url" : "https://apps.apple.com/us/app/quantumult-x/id
 if(version == 0) { $notify("⚠️ 请更新 Quantumult X 至最新商店版本\n","🚦 当前版本可能无法正常使用部分功能","\n👉 点击跳转商店链接更新",update_link) }
 
 const ADDRes = `quantumult-x:///add-resource?remote-resource=url-encoded-json`
-var RLink = {
+var RLink0 = {
   "filter_remote": [],
   "rewrite_remote": [],
   "server_remote": [],
@@ -100,6 +100,7 @@ typeQ = PRelay!=""? "server":typeQ
 var typec="" //check result type
 var Pflow=mark0 && para1.indexOf("flow=") != -1 ? para1.split("flow=")[1].split("&")[0] : 0; // 流量时间等参数
 var PProfile = mark0 && para1.indexOf("profile=") != -1 ? para1.split("profile=")[1].split("&")[0] : 0; // 通过URL-Scheme导入完整配置参数
+var Palpn = mark0 && para1.indexOf("alpn=") != -1 && version >= 712? para1.split("alpn=")[1].split("&")[0] : ""; // over-tls 类型，alpn参数
 
 // URL-Scheme 增加配置
 var ADDres = `quantumult-x:///add-resource?remote-resource=url-encoded-json`
@@ -207,10 +208,9 @@ function Parser() {
       $notify("❌ 解析出现错误", "⚠️ 请点击发送链接反馈", err, bug_link);
     }
   } else if (type0 == "wrong-field"){
-    //$notify(type0+"ss")
     if (version >= 670 && typec!="") { //尝试跳转到正确类型
-      RLink[Field[typec]].push($resource.link+", opt-parser=true, tag=下次添加资源🉑️长点❤️8⃣️") //  跳转URI-Scheme
-      var flink = ADDRes.replace(/url-encoded-json/,encodeURIComponent(JSON.stringify(RLink)))
+      RLink0[Field[typec]].push($resource.link+", opt-parser=true, tag=下次添加资源🉑️长点❤️8⃣️") //  跳转URI-Scheme
+      var flink = ADDRes.replace(/url-encoded-json/,encodeURIComponent(JSON.stringify(RLink0)))
       const bug_linkx = { "open-url": flink, "media-url": "https://shrtm.nu/obcB" } // bug linkx
     $notify( "⚠️ 请点击通知跳转尝试添加到正确类型中","❌ 检测类型["+typec+"]"+"与填入类型"+"["+typeQ+"]冲突", "如果跳转添加仍旧失败，请反馈解析器bot\n"+$resource.link, bug_linkx)
     } else {//旧版本
@@ -237,6 +237,12 @@ if (typeof($resource)!=="undefined" && PProfile == 0) {
   total = ProfileInfo[typeQ]
   $done({content:total})
 }
+
+
+/**
+# 以下为具体的 function
+
+*/
 
 function ParseUnknown(cnt){
   try {
@@ -266,6 +272,7 @@ function ResourceParse() {
     total = SGMD2QX(content0) // 转换 
     total = Rewrite_Filter(total, Pin0, Pout0,Preg,Pregout); // 筛选过滤
     if (Preplace) { total = ReplaceReg(total, Preplace) }
+    total = total.filter( (ele,pos)=>total.indexOf(ele) == pos); //重写重复检查
     if (Pcdn) {total = CDN(total)
     } else { total = total.join("\n")}
   } else if (type0 == "rewrite") { // rewrite 类型
@@ -298,6 +305,13 @@ function ResourceParse() {
   } else if (type0 == "unknown") {
     ParseUnknown(content0)
     flag = -1;
+  } else if (type0 == "profile") {
+    PProfile = "111" //默认添加所有部分
+    Profile_Handle()
+    openlink = {"open-url": ADDres}
+    $notify("⚠️ 该链接为完整配置文件, 请点击此通知跳转", "添加配置中的有效远程资源👇 ["+ PProfile+"]", ADDres, openlink)
+    flag = -1;
+    total = ""
   }
   
   //开始处理
@@ -425,16 +439,18 @@ function Type_Check(subs) {
     var SurgeK = ["=ss,", "=vmess,", "=trojan,", "=http,", "=custom,", "=https,", "=shadowsocks", "=shadowsocksr", "=sock5", "=sock5-tls"];
     var ClashK = ["proxies:"]
     var SubK = ["dm1lc3M", "c3NyOi8v", "CnNzOi8", "dHJvamFu", "c3M6Ly", "c3NkOi8v", "c2hhZG93",,"aHR0c", "CnRyb2phbjo"];
-    var RewriteK = [" url "]
+    var RewriteK = [" url 302", " url 307", " url reject", " url script", " url req", " url res", " url echo"] // quantumult X 类型 rewrite
     var SubK2 = ["ss://", "vmess://", "ssr://", "trojan://", "ssd://", "https://"];
     var ModuleK = ["[Script]", "[Rule]", "[URL Rewrite]", "[Map Local]", "[MITM]", "\nhttp-r"]
+    var QXProfile = ["[filter_local]","[filter_remote]","[server_local]","[server_remote]"]
     var html = "DOCTYPE html"
     var subi = subs.replace(/ /g, "")
     const RuleCheck = (item) => subi.toLowerCase().indexOf(item) != -1;
     const NodeCheck = (item) => subi.toLowerCase().indexOf(item.toLowerCase()) != -1;
     const NodeCheck1 = (item) => subi.toLowerCase().indexOf(item.toLowerCase()) != -1; //b64加密的订阅类型
     const NodeCheck2 = (item) => subi.toLowerCase().indexOf(item.toLowerCase()) != -1; //URI 类型
-    const RewriteCheck = (item) => subs.indexOf(item) != -1;
+    const RewriteCheck = (item) => ( subs.indexOf(item) != -1) ;
+    const ProfileCheck = (item) => subs.indexOf(item) != -1; //是否为quanx配置文件
     var subsn = subs.split("\n")
     if ( (subs.indexOf(html) != -1 || subs.indexOf("doctype html") != -1) && link0.indexOf("github.com" == -1)) {
       $notify("‼️ 该链接返回为无效网页内容"+ " ➟ " + "⟦" + subtag + "⟧", "⁉️ 点通知跳转以确认链接是否失效\n"+link0, "返回内容如下⬇️：\n"+subs, nan_link);
@@ -445,14 +461,16 @@ function Type_Check(subs) {
       type = (typeQ == "unsupported" || typeQ =="server")? "Clash":"wrong-field";
       typec = "server"
       content0 = Clash2QX(subs)
-    } else if ((/^hostname\s*\=|pattern\=/.test(subi) || RewriteK.some(RewriteCheck)) && !/\[(Proxy|filter_local)\]/.test(subs) && para1.indexOf("dst=filter")==-1 && subi.indexOf("securehostname") == -1 && !/module|nodes|rule/.test(typeU) ) {
+    } else if ((/^hostname\s*\=|pattern\=/.test(subi) || RewriteK.some(RewriteCheck))  && para1.indexOf("dst=filter")==-1 && subi.indexOf("securehostname") == -1 && !/module|nodes|rule/.test(typeU) && !(RuleK.some(RuleCheck) && typeQ == "filter")) {
+      // 2022-07-20 remove constrain && !/\[(Proxy|filter_local)\]/.test(subs)
       typec = "rewrite"
       type = (typeQ == "unsupported" || typeQ =="rewrite")? "rewrite":"wrong-field" //Quantumult X 类型 rewrite/ Surge Script/
     } else if ( (((ModuleK.some(RewriteCheck) || para1.indexOf("dst=rewrite") != -1) && (para1.indexOf("dst=filter") == -1) && subs.indexOf("[Proxy]") == -1) || typeU == "module") && typeU != "nodes" && typeU != "rule" && typeQ !="filter") { // Surge 类型 module /rule-set(含url-regex) 类型
       typec="rewrite"
       type = (typeQ == "unsupported" || typeQ =="rewrite")? "sgmodule" : "wrong-field"
-    } else if (((RuleK.some(RuleCheck) && subs.indexOf(html) == -1 && !/\[(Proxy|server_local)\]/.test(subs)) || typeU == "rule" || para1.indexOf("dst=filter")!=-1) && typeU != "nodes") {
+    } else if (((RuleK.some(RuleCheck) && subs.indexOf(html) == -1 ) || typeU == "rule" || para1.indexOf("dst=filter")!=-1) && typeU != "nodes" && !(typeQ == "server" && (QuanXK.some(NodeCheck) || SurgeK.some(NodeCheck))) ) {
       // rule/filter类型
+      // 2022-07-20 remove constrain && !/\[(Proxy|server_local)\]/.test(subs) adter html
       typec = "filter"
       type = (typeQ == "unsupported" || typeQ =="filter")? "Rule":"wrong-field";
     } else if (typeU == "domain-set") {// 仅限用户指定为 domain-set；((DomainK.some(RuleCheck) || typeU == "domain-set") && subs.indexOf("[Proxy]") == -1 && typeU != "nodes") {
@@ -460,7 +478,8 @@ function Type_Check(subs) {
       type = (typeQ == "unsupported" || typeQ =="filter")? "Rule":"wrong-field";
       content0 = Domain2Rule(content0) // 转换 domain-set
     } else if (typeQ == "filter") { // 纯 list类型？
-      type = "Rule"
+      typec = "filter"
+      type = (typeQ == "unsupported" || typeQ =="filter")? "Rule":"wrong-field";
     } else if (subsn.length >= 1 && SubK2.some(NodeCheck2) && !/\[(Proxy|filter_local)\]/.test(subs)) { //未b64加密的多行URI 组合订阅
       typec = "server"
        type= (typeQ == "unsupported" || typeQ =="server"||typeQ =="uri") ? "Subs":"wrong-field"
@@ -486,7 +505,10 @@ function Type_Check(subs) {
     } else if (SubK.some(NodeCheck1)) {  //b64加密的订阅类型
       typec="server"
       type = (typeQ == "unsupported" || typeQ =="server")? "Subs-B64Encode":"wrong-field"
-    } 
+    } else if (QXProfile.every(ProfileCheck)) {
+      typec = "profile"
+      type = "profile"  //默认配置类型
+    }
   // 用于通知判断类型，debug
   if(typeU == "X"){
     $notify("该链接判定类型",type+" : " +typec, subs)
@@ -759,7 +781,18 @@ function CDN(cnt) {
 // 指定节点 host 参数
 function HOST_Handle(cnt,phost) {
   phost="host="+phost+","
-  cnt = cnt.replace(/host\s*\=(.*?)\,/,phost)
+  if (phost.indexOf("☠️") == -1) { //只替换已有host类型
+    cnt = cnt.replace(/host\s*\=(.*?)\,/,phost)
+  } else { // 为已有的替换，为没有的增加 obfs-host\tls-host
+    phost=phost.split("☠️")[0]
+    if (/-host\s*\=/.test(cnt)) {// 如已有 host 参数
+      cnt = cnt.replace(/host\s*\=(.*?)\,/,phost+", ")
+    } else if (/over-tls\s*\=\s*true/.test(cnt)) { // 如无host，但可以增加
+      cnt = cnt+", tls-"+phost
+    } else if (/obfs\s*\=/.test(cnt)) {
+      cnt = cnt + ", obfs-"+phost
+    }
+  }
   return cnt
 }
 
@@ -774,11 +807,21 @@ function SHA256_Handle(cnt,pcsha256,ppsha256) {
   return cnt
 }
 
+// 指定alpn参数,over-tls类型？
+function ALPN_Handle(cnt,palpn) {
+  cnti = cnt.replace(/\s/gmi,"") //删掉空格
+  if (cnti.indexOf("obfs=over-tls") != -1 || cnti.indexOf("over-tls=true")!=-1) {
+    cnt = cnt + ", tls-alpn="+palpn
+  }
+  return cnt
+}
+
 //url-regex 转换成 Quantumult X
 function URX2QX(subs) {
     var nrw = []
     var rw = ""
     subs = subs.split("\n")
+    //$notify("URX")
     var NoteK = ["//", "#", ";"];  //排除注释项
     for (var i = 0; i < subs.length; i++) {
         const notecheck = (item) => subs[i].indexOf(item) == 0
@@ -792,6 +835,7 @@ function URX2QX(subs) {
         } 
     }
     }
+    //$notify("URX","",nrw)
     return nrw
 }
 
@@ -800,6 +844,7 @@ function SCP2QX(subs) {
   var nrw = []
   var rw = ""
   subs = subs.split("\n").map(x => x.trim().replace(/\s+/g," "))
+  //$notify("Script","",subs)
   for (var i = 0; i < subs.length; i++) {
     try {
       if (subs[i].slice(0, 8) == "hostname") {
@@ -829,8 +874,9 @@ function SCP2QX(subs) {
             rw = ptn + " url " + type + js
             nrw.push(rw)
           }
-        } else if (subs[i].indexOf(" 302") != -1 || subs[i].indexOf(" 307") != -1) { //rewrite 302&307 复写
+        } else if (/\s30(7|2)$/.test(subs[i])) { //rewrite 302&307 复写
           //tpe = subs[i].indexOf(" 302") != -1? "302":"307"
+          //$notify("307/2",subs[i])
           rw = subs[i].split(" ")[0] + " url " + subs[i].split(" ")[2] + " " + subs[i].split(" ")[1].trim()
           //if(rw.indexOf("307")!=-1) {$notify("XX",subs[i],rw.split(" "))}
           nrw.push(rw)
@@ -922,7 +968,14 @@ function Rewrite_Filter(subs, Pin, Pout,Preg,Pregout) {
             $notify("🤖 " + "重写引用  ➟ " + "⟦" + subtag + "⟧", "⛔️ 筛选参数: " + pfi + pfo, "☠️ 重写 rewrite 中已禁用以下" + nowrite + "个匹配项:" + "\n ⨷ " + dwrite.join("\n ⨷ "), rwrite_link)
         }
     }
-    if (Nlist.length == 0) { $notify("🤖 " + "重写引用  ➟ " + "⟦" + subtag + "⟧", "⛔️ 筛选参数: " + pfi + pfo, "⚠️ 筛选后剩余rewrite规则数为 0️⃣ 条, 请检查参数及原始链接", nan_link) }
+    if (Nlist.length == 0 ) { 
+      if ((Pin0 || Pout0 || Phin0 || Phout0 || Pregout || Preg)) {
+        $notify("🤖 " + "重写引用  ➟ " + "⟦" + subtag + "⟧", "⛔️ 筛选参数: " + pfi + pfo, "⚠️ 筛选后剩余rewrite规则数为 0️⃣ 条, 请检查参数及原始链接", nan_link) 
+      } else {
+        $notify("🤖 " + "重写引用  ➟ " + "⟦" + subtag + "⟧", "⛔️ 解析后 rewrite 规则数为 0️⃣ 条 " , "⚠️ 请检查参数及原始链接内容", nan_link) 
+      
+      }
+    }
     if(Preg){ Nlist = Nlist.map(Regex).filter(Boolean) // regex to filter rewrites
       RegCheck(Nlist, "重写引用", "regex", Preg) }
     if(Pregout){ Nlist = Nlist.map(RegexOut).filter(Boolean) // regex to delete rewrites
@@ -1002,7 +1055,7 @@ function Rule_Handle(subs, Pout, Pin) {
     Tout = Pout; //过滤参数
     ply = Ppolicy; //策略组
     var nlist = []
-    var RuleK = ["//", "#", ";","["]; //排除项目
+    var RuleK = ["//", "#", ";","[","^"]; //排除项目
     var RuleK2 = ["host,", "-suffix,", "domain,", "-keyword,", "ip-cidr,", "ip-cidr6,",  "geoip,", "user-agent,", "ip6-cidr,"];
     if (Tout != "" && Tout != null) { // 有 out 参数时
         var dlist = [];
@@ -1086,7 +1139,7 @@ function Rule_Handle(subs, Pout, Pin) {
 
 function Rule_Policy(content) { //增加、替换 policy
     var cnt = content.replace(/^\s*\-\s/g,"").replace(/REJECT-TINYGIF/gi,"reject").trim().split("//")[0].trim().split(",");
-    var RuleK = ["//", "#", ";","[","/", "hostname","no-ipv6","no-system","<","{","}","]"];
+    var RuleK = ["//", "#", ";","[","/", "hostname","no-ipv6","no-system","<","{","}","]","^"];
     var RuleK1 = ["host", "domain", "ip-cidr", "geoip", "user-agent", "ip6-cidr"];
     const RuleCheck = (item) => cnt[0].trim().toLowerCase().indexOf(item) == 0; //无视注释行
     const RuleCheck1 = (item) => cnt[0].trim().toLowerCase().indexOf(item) == 0 ; //无视 quanx 不支持的规则类别&排除 hostname
@@ -1275,6 +1328,7 @@ function Subs2QX(subs, Pudp, Ptfo, Pcert0, PTls13) {
             if (Phost != "") {node = HOST_Handle(node,Phost)} // host 参数修改
             if (Pcsha256 != "" || Ppsha256 != "") {
             node = SHA256_Handle(node,Pcsha256,Ppsha256)} // Sha256 参数
+            if (Palpn !="") { node = ALPN_Handle(node,Palpn)} // alpn 参数
             node = TLS_Check(node)
             if (node instanceof Array) {
                 for (var j in node) {
@@ -1850,7 +1904,6 @@ function isQuanXRewrite(content) {
     if(cnt[i]){
       var cnti = cnt[i].trim()
       const RuleCheck = (item) => cnti.toLowerCase().indexOf(item) != -1;
-      
       if (cnti.indexOf("pattern")!=-1 && cnti.indexOf("type")!=-1 || cnti.indexOf("http-r")!=-1) {
         cnti=SGMD2QX(cnti)[0]? SGMD2QX(cnti)[0]:""
         //console.log(cnti)
@@ -1861,8 +1914,12 @@ function isQuanXRewrite(content) {
         cnti=SGMD2QX(cnti)[0]? SGMD2QX(cnti)[0]:""
       }else if(cnti.indexOf(" data=")!=-1){
         cnti=cnti.replace(/ /g, "").split("data=")[0] + " url " + "reject-dict"
+      } else if (cnti.indexOf(" url ")!=-1 ){
+        cnti= cnti.split(" ")[1] == "url" ? cnti : ""
+      } else {
+        cnti=""
       }
-      if (cnti.trim()[0]!="[" && cnti.indexOf("RULE-SET")==-1 && !/cronexp\=|type\=cron/.test(cnti.replace(/ /g,"")) && !RuleK.some(RuleCheck)) {
+      if (cnti!="" && cnti.trim()[0]!="[" && cnti.indexOf("RULE-SET")==-1 && !/cronexp\=|type\=cron/.test(cnti.replace(/ /g,"")) && !RuleK.some(RuleCheck)) {
         if (!(/\;$/.test(cnti))) { // 某些特殊情形 let url = xxx;
         cnt0.push(cnti) //  排除其它项目后写入
       }
@@ -1870,6 +1927,7 @@ function isQuanXRewrite(content) {
     }
   }
   //console.log(cnt0)
+  //$notify("RWT","",cnt0)
   return cnt0
 }
 
@@ -2031,15 +2089,15 @@ function emoji_del(str) {
 
 //为节点名添加 emoji
 function get_emoji(emojip, sname) {
-  var Lmoji = { 
-    "🏳️‍🌈": ["流量", "套餐", "剩余", "重置", "到期" , "时间", "应急", "过期", "Bandwidth", "expire"],
+   var Lmoji = { 
+    "🏳️‍🌈": ["流量", "套餐", "剩余", "重置", "到期" , "时间", "应急", "过期", "Bandwidth", "expire", "Traffic", "traffic"],
     "🇦🇩": ["安道尔"],
     "🇦🇿": ["阿塞拜疆"],
     "🇦🇹": ["奥地利", "奧地利", "Austria", "维也纳"],
     "🇦🇺": ["AU", "Australia", "Sydney", "澳大利亚", "澳洲", "墨尔本", "悉尼" ,"土澳", "京澳","廣澳","滬澳","沪澳","广澳"],
     "🇧🇪": ["BE", "比利時","比利时"],
     "🇧🇬": ["保加利亚", "保加利亞","Bulgaria"],
-    "🇵🇰": ["巴基斯坦"],
+    "🇵🇰": ["巴基斯坦","Pakistan", "PAKISTAN"],
     "🇧🇭": ["巴林"],
     "🇵🇾": ["巴拉圭"],
     "🇰🇭": ["柬埔寨"],
@@ -2049,10 +2107,10 @@ function get_emoji(emojip, sname) {
     "🇨🇭": ["瑞士", "苏黎世", "Switzerland"],
     "🇳🇬": ["尼日利亚", "NG", "尼日利亞","拉各斯"],
     "🇨🇿": ["Czechia", "捷克"],
-    "🇸🇰": ["斯洛伐克", "SK"],
-    "🇸🇮": ["斯洛文尼亚"],
-    "🇦🇲": ["亚美尼亚"],
-    "🇷🇸": ["RS", "塞尔维亚"],
+    "🇸🇰": ["斯洛伐克", "SK" ],
+    "🇸🇮": ["斯洛文尼亚", "斯洛文尼亞"],
+    "🇦🇲": ["亚美尼亚", "亞美尼亞"],
+    "🇷🇸": ["RS ","RS_", "塞尔维亚", "塞爾維亞"],
     "🇲🇩": ["摩爾多瓦","MD","摩尔多瓦"],
     "🇩🇪": [" DE ", "German", "GERMAN", "德国", "德國", "法兰克福","京德","滬德","廣德","沪德","广德"],
     "🇩🇰": ["DK","DNK","丹麦","丹麥"],
@@ -2060,19 +2118,20 @@ function get_emoji(emojip, sname) {
     "🇪🇺": ["EU", "欧盟", "欧罗巴","欧洲"],
     "🇫🇮": ["Finland", "芬兰","芬蘭","赫尔辛基"],
     "🇫🇷": ["FR", "France", "法国", "法國", "巴黎"],
-    "🇷🇪": ["留尼汪"],
+    "🇷🇪": ["留尼汪", "留尼旺"],
+    "🇨🇼": ["库拉索", "庫拉索"],
     "🇬🇧": ["UK", "GB ", "England", "United Kingdom", "英国", "伦敦", "英"],
     "🇲🇴": ["MO", "Macao","Macau", "MAC", "澳门", "澳門", "CTM"],
-    "🇰🇿": ["哈萨克斯坦"],
-    "🇭🇺": ["匈牙利", "Hungary"],
+    "🇰🇿": ["哈萨克斯坦", "哈薩克斯坦"],
+    "🇭🇺": ["匈牙利", "Hungary",],
     "🇱🇹": ["立陶宛"],
-    "🇱🇰": ["斯里兰卡"],
+    "🇱🇰": ["斯里兰卡", "斯里蘭卡"],
     "🇧🇾": ["BY","白俄罗斯","白俄羅斯"],
-    "🇷🇺": ["RU ","RUS", "Russia", "俄罗斯", "毛子", "俄国", "俄羅斯", "伯力", "莫斯科", "圣彼得堡", "西伯利亚", "新西伯利亚", "京俄", "杭俄","廣俄","滬俄","广俄","沪俄"],
+    "🇷🇺": ["RU ","RU_", "RUS", "Russia", "俄罗斯", "毛子", "俄国", "俄羅斯", "伯力", "莫斯科", "圣彼得堡", "西伯利亚", "新西伯利亚", "京俄", "杭俄","廣俄","滬俄","广俄","沪俄"],
     "🇸🇬": ["SG", "Singapore","SINGAPORE", "新加坡", "狮城", "沪新", "京新", "泉新", "穗新", "深新", "杭新", "广新","廣新","滬新"],
-    "🇺🇸": ["US", "USA", "America", "United States", "美国", "美", "京美", "波特兰", "达拉斯", "俄勒冈", "凤凰城", "费利蒙", "硅谷", "矽谷", "拉斯维加斯", "洛杉矶", "圣何塞", "圣克拉拉", "西雅图", "芝加哥", "沪美", "哥伦布", "纽约"],
+    "🇺🇸": ["US", "USA", "America", "United States", "美国", "美", "京美", "波特兰", "达拉斯", "俄勒冈", "凤凰城", "费利蒙", "硅谷", "矽谷", "拉斯维加斯", "洛杉矶", "圣何塞", "圣荷西", "圣克拉拉", "西雅图", "芝加哥", "沪美", "哥伦布", "纽约"],
     "🇹🇼": ["TW", "Taiwan","TAIWAN", "台湾", "台北", "台中", "新北", "彰化", "CHT", "台", "HINET"],
-    "🇮🇩": ["ID", "Indonesia", "印尼", "印度尼西亚", "雅加达"],
+    "🇮🇩": ["ID ", "Indonesia", "印尼", "印度尼西亚", "雅加达"],
     "🇮🇪": ["Ireland", "IRELAND", "爱尔兰", "愛爾蘭", "都柏林"],
     "🇮🇱": ["Israel", "以色列"],
     "🇮🇳": ["India", "IND", "INDIA","印度", "孟买", "Mumbai","IN "],
@@ -2082,8 +2141,8 @@ function get_emoji(emojip, sname) {
     "🇱🇺": ["卢森堡"],
     "🇱🇻": ["Latvia", "Latvija", "拉脱维亚"],
     "🇧🇩": ["孟加拉"],
-    "🇲🇽️": ["MEX", "MX", "墨西哥"],
-    "🇲🇾": ["MY", "Malaysia","MALAYSIA", "马来西亚", "大馬", "馬來西亞", "吉隆坡"],
+    "🇲🇽️": ["MEX", "MX", "墨西哥", "Mexico", "MEXICO"],
+    "🇲🇾": ["MY", "Malaysia","MALAYSIA", "马来西亚", "马来", "馬來", "大马", "大馬", "馬來西亞", "吉隆坡"],
     "🇳🇱": ["NL", "Netherlands", "荷兰", "荷蘭", "尼德蘭", "阿姆斯特丹"],
     "🇵🇭": ["PH", "Philippines", "菲律宾", "菲律賓"],
     "🇷🇴": [" RO ", "罗马尼亚"],
@@ -2121,9 +2180,9 @@ function get_emoji(emojip, sname) {
     "🇹🇳": ["突尼斯"],
     "🇵🇦": ["巴拿马","巴拿馬"],
     "🇮🇷": ["伊朗"],
-    "🇯🇴": ["约旦"],
-    "🇺🇾": ["乌拉圭"],
-    "🇰🇪": ["肯尼亚"],
+    "🇯🇴": ["约旦", "約旦"],
+    "🇺🇾": ["乌拉圭" , "烏拉圭"],
+    "🇰🇪": ["肯尼亚", "肯尼亞"],
     "🇰🇬": ["吉尔吉斯坦","吉尔吉斯斯坦"],
     "🇳🇵": ["尼泊尔"],
     "🇽🇰": ["科索沃"],
