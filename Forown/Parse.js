@@ -1,3 +1,9 @@
+/**
+☑️ 资源解析器 
+☑️ 作者：©𝐒𝐡𝐚𝐰𝐧
+*/
+
+
 let [link0, content0, subinfo] = [$resource.link, $resource.content, $resource.info]
 let version = typeof $environment != "undefined" ? Number($environment.version.split("build")[1]): 0 // 版本号
 
@@ -239,10 +245,6 @@ if (typeof($resource)!=="undefined" && PProfile == 0) {
 }
 
 
-/**
-# 以下为具体的 function
-
-*/
 
 function ParseUnknown(cnt){
   try {
