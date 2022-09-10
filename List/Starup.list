@@ -1,5 +1,5 @@
 # https://t.me/QuantX
-# > 更新时间  2022.06.08
+# > 更新时间  2022.09.10
 
 
 # > 光大银行阳光惠生活
@@ -105,7 +105,7 @@ host-keyword, p6-pack.byteimg.com, reject
 # > 懂球帝
 host-keyword, apimg.qunliao.info, reject
 # > 搜狗
-host, indivi-cdn.shouji.sogou.com/wapdl/hole, reject
+
 HOST-SUFFIX,epro.sogou.com, reject
 HOST-SUFFIX,golden1.sogou.com, reject
 HOST-SUFFIX,inte.sogou.com, reject
