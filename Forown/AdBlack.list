@@ -1,3 +1,11 @@
+# > 浦发银行
+^https?:\/\/cdnmlmda\.res\.spdb\.com\.cn\/oss\/product-mm\/app\/default\/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{20}_[0-4]{3}x[0-8]{3}.png url reject-200
+^https?:\/\/cdnmlmda\.res\.spdb\.com\.cn\/oss\/product-mm\/app\/default\/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{20}_[0-9]{4}x[0-9]{4}.png url reject-200
+^https?:\/\/cdnmlmda\.res\.spdb\.com\.cn\/oss\/product-mm\/app\/default\/.*.(jpg|gif|JPG) url reject-200
+^https?:\/\/mlmdacdn\.spdb\.com\.cn\/oss\/product-mm\/app\/default\/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{20}_[0-4]{3}x[0-8]{3}.png url reject-200
+^https?:\/\/mlmdacdn\.spdb\.com\.cn\/oss\/product-mm\/app\/default\/[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{20}_[0-9]{4}x[0-9]{4}.png url reject-200
+^https?:\/\/mlmdacdn\.spdb\.com\.cn\/oss\/product-mm\/app\/default\/.*.(jpg|gif|JPG) url reject-200
+
 # > 中国移动
 ^https?:\/\/gd\.10086\.cn\/gmccfile\/file\/image\/preloading703\/.*.jpg url reject
 ^https?+:\/\/clientaccess\.10086\.cn\/biz-orange\/DN\/init\/startInit url reject-200
